@@ -34,6 +34,10 @@ parser.add_argument('--data_type', type=str, default='float32')
 parser.add_argument('--padding_threshold_cap', type=float, default=1.0)
 parser.add_argument('--keep_tiny', dest='keep_tiny', action='store_true')
 parser.add_argument('--num_threads', type=int, default=4)
+parser.add_argument('--network', type=str, default='resnet')
+parser.add_argument('--testcase', type=str, default='0')
+parser.add_argument('--runs', type=int, default=1)
+
 
 args = parser.parse_args()
 top1_time = 0
@@ -236,12 +240,15 @@ def compile_and_run_kernel(rprog, op, arch, policy, device_id, idx):
         idx)
     with open('{}.cu'.format(file_name), 'w') as ouf:
         ouf.write(main_source)
+    # print("device_id: ", device_id)
+    device_id = 1
     os.system("/usr/local/cuda/bin/nvcc {}.cu -lcuda -gencode=arch=compute_70,code=compute_70 -o {} && " \
         "export CUDA_VISIBLE_DEVICES={} && "\
-        "/usr/local/cuda/bin/nvprof ./{} > {} 2>&1 && " \
+        "/usr/local/cuda/bin/ncu --target-processes all  ./{} > {} 2>&1 && " \
         "rm {} && " \
         "rm {}.cu".format(file_name, file_name, device_id, file_name, log_name, file_name, file_name))
-
+    # print (f"log_name: {log_name}")
+    # exit()
     exec_time = get_time_from_nvprof_file(log_name)
     os.system("rm {}".format(log_name))
     return exec_time, source, blocks, grids
@@ -256,7 +263,13 @@ def eval_thread(rprogs, rprog_idx, device_id, op, arch, policy):
     best_grids = None
     for idx in range(rprog_idx[device_id], rprog_idx[device_id + 1]):
         rprog = rprogs[idx]
-        exec_time, source, blocks, grids = compile_and_run_kernel(rprog, op, arch, policy, device_id, idx)
+        try:
+            exec_time, source, blocks, grids = compile_and_run_kernel(rprog, op, arch, policy, device_id, idx)
+        except:
+            exec_time = 1e100
+            
+        # print("device_id: {}, idx: {}, exec_time: {}".format(device_id, idx, exec_time))
+        exec_time = float(exec_time)
         if exec_time < best_time:
             best_idx = idx
             best_time = exec_time
@@ -325,12 +338,25 @@ if __name__ == '__main__':
     
     eval_time = time.time() - start_time
 
-    print("top1 time: {} ms".format(top1_time))
-    print("top10 time: {} ms".format(best_time))
-    print("best idx: {}".format(best_idx))
-    print("best config: {}".format(rprogs[best_idx].Dump()))
-    print("top1 compile time: {} s".format(emit_time))
-    print("top10 compile time: {} s".format(eval_time))
+    # print("top1 time: {} ms".format(top1_time))
+    # print("top10 time: {} ms".format(best_time))
+    # print("best idx: {}".format(best_idx))
+    # print("best config: {}".format(rprogs[best_idx].Dump()))
+    # print("top1 compile time: {} s".format(emit_time))
+    # print("top10 compile time: {} s".format(eval_time))
+    
+    # write arg.topk to file, performance.csv
+    # contrains top1, topk, top1 complie time, topk compile time
+    network = args.network
+    testcase = args.testcase
+    runs = args.runs
+    output_file = f"run_time_{runs}_performance_{network}_top{args.topk}.csv"
+    if not os.path.exists(output_file):
+        with open(output_file, "w") as f:
+            f.write(f"testcase,top1,top{args.topk},top1 compile time,top{args.topk} end2end time\n")
+    
+    with open(output_file, "a") as f:
+        f.write(f"{testcase},{top1_time/1000},{best_time/1000},{emit_time},{eval_time}\n")
 
     cu_file_name = 'roller_{}_{}.cu'.format(args.op, '_'.join([str(d) for d in args.shape]))
     os.system("mkdir -p " + args.code_dir)

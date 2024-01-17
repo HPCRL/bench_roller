@@ -22,11 +22,24 @@ def get_time_from_nvprof_file(out, backend="tvm"):
             kernel_name = "default_function_kernel0"
         if backend == "antares":
             kernel_name = "template_op_kernel0"
+        # Duration                      msecond         2.30
         for line in lines:
-            if kernel_name in line:
+            # print(line)
+            # if kernel_name in line:
+            #     breaks = line.split()
+            #     return str_to_ms(breaks[-4])
+            if "Duration" in line:
+                print(line)
                 breaks = line.split()
-                return str_to_ms(breaks[-4])
+                print (breaks)
+                print (breaks[-1])
+                time = breaks[-1]
+                if "msecond" in line:
+                    return float(time)
+                else : # usecond
+                    return float(time) * 1e-3
     # kernel does not execute
+    # exit(1)
     return 1e100
 
 def get_time_from_rocm_file(file_name="_tmp"):
