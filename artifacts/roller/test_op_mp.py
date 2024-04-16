@@ -241,10 +241,10 @@ def compile_and_run_kernel(rprog, op, arch, policy, device_id, idx):
     with open('{}.cu'.format(file_name), 'w') as ouf:
         ouf.write(main_source)
     # print("device_id: ", device_id)
-    device_id = 1
-    os.system("/usr/local/cuda/bin/nvcc {}.cu -lcuda -gencode=arch=compute_70,code=compute_70 -o {} && " \
+    device_id = 0
+    os.system("nvcc {}.cu -lcuda -gencode=arch=compute_70,code=compute_70 -o {} && " \
         "export CUDA_VISIBLE_DEVICES={} && "\
-        "/usr/local/cuda/bin/ncu --target-processes all  ./{} > {} 2>&1 && " \
+        "ncu --target-processes all  ./{} > {} 2>&1 && " \
         "rm {} && " \
         "rm {}.cu".format(file_name, file_name, device_id, file_name, log_name, file_name, file_name))
     # print (f"log_name: {log_name}")
