@@ -93,11 +93,10 @@ done
 # 3	1	64	136	136	128	1	1	1
 # 4	1	256	68	68	128	3	3	1
 # 5	1	128	68	68	256	1	1	1
-# 6	1	512	68	68	256	3	3	1
-# 7	1	512	34	34	256	3	3	1
-# 8	1	256	34	34	512	1	1	1
-# 9	1	1024	17	17	512	3	3	1
-# 10	1	512	17	17	1024	1	1	1
+# 6	1	512	34	34	256	3	3	1
+# 7	1	256	34	34	512	1	1	1
+# 8	1	1024	17	17	512	3	3	1
+# 9	1	512	17	17	1024	1	1	1
 
 # yolo
 for ((i=0;i<$totalround;i++)); do
@@ -128,24 +127,20 @@ for ((i=0;i<$totalround;i++)); do
     --shape 1	128	68	68	256	1	1 2>&1 |tee $LOG_DIR/yolo5.log
 
     # yolo6
-    FUSE_PAD=0 CONV_LAYOUT=NCHW  python3 -u $CODE_DIR/test_op_mp.py --runs $i --network yolo --testcase 8 --topk 50 --arch $1 --code_dir generated_source/conv --smem_tiling --reg_tiling --op conv_expr_S1D1P1 \
-    --shape 1	512	68	68	256	3	3 2>&1 |tee $LOG_DIR/yolo8.log
-
-    # yolo7
     FUSE_PAD=0 CONV_LAYOUT=NCHW  python3 -u $CODE_DIR/test_op_mp.py --runs $i --network yolo --testcase 6 --topk 50 --arch $1 --code_dir generated_source/conv --smem_tiling --reg_tiling --op conv_expr_S1D1P1 \
     --shape 1	512	34	34	256	3	3 2>&1 |tee $LOG_DIR/yolo6.log
 
-    # yolo8
+    # yolo7
     FUSE_PAD=0 CONV_LAYOUT=NCHW  python3 -u $CODE_DIR/test_op_mp.py --runs $i --network yolo --testcase 7 --topk 50 --arch $1 --code_dir generated_source/conv --smem_tiling --reg_tiling --op conv_expr_S1D1P1 \
     --shape 1	256	34	34	512	1	1 2>&1 |tee $LOG_DIR/yolo7.log
 
+    # yolo8
+    FUSE_PAD=0 CONV_LAYOUT=NCHW  python3 -u $CODE_DIR/test_op_mp.py --runs $i --network yolo --testcase 8 --topk 50 --arch $1 --code_dir generated_source/conv --smem_tiling --reg_tiling --op conv_expr_S1D1P1 \
+    --shape 1	1024	17	17	512	3	3 2>&1 |tee $LOG_DIR/yolo8.log
+
     # yolo9
     FUSE_PAD=0 CONV_LAYOUT=NCHW  python3 -u $CODE_DIR/test_op_mp.py --runs $i --network yolo --testcase 9 --topk 50 --arch $1 --code_dir generated_source/conv --smem_tiling --reg_tiling --op conv_expr_S1D1P1 \
-    --shape 1	1024	17	17	512	3	3 2>&1 |tee $LOG_DIR/yolo9.log
-
-    # yolo10
-    FUSE_PAD=0 CONV_LAYOUT=NCHW  python3 -u $CODE_DIR/test_op_mp.py --runs $i --network yolo --testcase 10 --topk 50 --arch $1 --code_dir generated_source/conv --smem_tiling --reg_tiling --op conv_expr_S1D1P1 \
-    --shape 1	512	17	17	1024	1	1 2>&1 |tee $LOG_DIR/yolo10.log
+    --shape 1	512	17	17	1024	1	1 2>&1 |tee $LOG_DIR/yolo9.log
 
     mkdir -p $LOG_DIR/yolo_roller_$i
     mv $LOG_DIR/yolo*.log $LOG_DIR/yolo_roller_$i
@@ -157,9 +152,9 @@ done
 # M	N	L
 # 512	64	1024
 # 512	4096	1024
+# 512	1024	4096
 # 512	64	768
 # 512	3072	768
-# 512	1024	4096
 # 512	768	3072
 
 # matmul
@@ -168,9 +163,10 @@ for ((i=0;i<$totalround;i++)); do
 
     python3 -u $CODE_DIR/test_op_mp.py --runs $i --network mm --testcase 0 --topk 50 --arch $1 --code_dir generated_source/matmul --smem_tiling --reg_tiling --op matmul_expr --shape 512 64   1024 2>&1 | tee $LOG_DIR/matmul0_512_64_1024.log
     python3 -u $CODE_DIR/test_op_mp.py --runs $i --network mm --testcase 1 --topk 50 --arch $1 --code_dir generated_source/matmul --smem_tiling --reg_tiling --op matmul_expr --shape 512 4096 1024 2>&1 | tee $LOG_DIR/matmul1_512_4096_1024.log
-    python3 -u $CODE_DIR/test_op_mp.py --runs $i --network mm --testcase 2 --topk 50 --arch $1 --code_dir generated_source/matmul --smem_tiling --reg_tiling --op matmul_expr --shape 512 64   768  2>&1 | tee $LOG_DIR/matmul2_512_64_768.log
-    python3 -u $CODE_DIR/test_op_mp.py --runs $i --network mm --testcase 3 --topk 50 --arch $1 --code_dir generated_source/matmul --smem_tiling --reg_tiling --op matmul_expr --shape 512 3072 768  2>&1 | tee $LOG_DIR/matmul3_512_3072_768.log
-    python3 -u $CODE_DIR/test_op_mp.py --runs $i --network mm --testcase 4 --topk 50 --arch $1 --code_dir generated_source/matmul --smem_tiling --reg_tiling --op matmul_expr --shape 512 1024 4096 2>&1 | tee $LOG_DIR/matmul4_512_1024_4096.log
+    python3 -u $CODE_DIR/test_op_mp.py --runs $i --network mm --testcase 2 --topk 50 --arch $1 --code_dir generated_source/matmul --smem_tiling --reg_tiling --op matmul_expr --shape 512 1024 4096 2>&1 | tee $LOG_DIR/matmul2_512_1024_4096.log
+
+    python3 -u $CODE_DIR/test_op_mp.py --runs $i --network mm --testcase 3 --topk 50 --arch $1 --code_dir generated_source/matmul --smem_tiling --reg_tiling --op matmul_expr --shape 512 64   768  2>&1 | tee $LOG_DIR/matmul3_512_64_768.log
+    python3 -u $CODE_DIR/test_op_mp.py --runs $i --network mm --testcase 4 --topk 50 --arch $1 --code_dir generated_source/matmul --smem_tiling --reg_tiling --op matmul_expr --shape 512 3072 768  2>&1 | tee $LOG_DIR/matmul4_512_3072_768.log
     python3 -u $CODE_DIR/test_op_mp.py --runs $i --network mm --testcase 5 --topk 50 --arch $1 --code_dir generated_source/matmul --smem_tiling --reg_tiling --op matmul_expr --shape 512 768  3072 2>&1 | tee $LOG_DIR/matmul5_512_768_3072.log
 
     mkdir -p $LOG_DIR/matmul_roller_$i
